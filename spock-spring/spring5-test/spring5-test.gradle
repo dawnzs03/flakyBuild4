@@ -1,0 +1,21 @@
+def springVersion = "5.0.2.RELEASE"
+
+dependencies {
+  implementation "org.springframework:spring-core"
+
+  testImplementation projects.spockCore
+  testImplementation projects.spockSpring
+  testImplementation libs.junit4
+  testImplementation "org.springframework:spring-context"
+  testImplementation ("org.springframework:spring-test")
+
+}
+
+
+configurations.all {
+  resolutionStrategy.eachDependency {
+    if (requested.group == "org.springframework" ) {
+      useVersion(springVersion)
+    }
+  }
+}
