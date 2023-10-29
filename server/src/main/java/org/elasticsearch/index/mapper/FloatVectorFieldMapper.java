@@ -63,7 +63,7 @@ public class FloatVectorFieldMapper extends FieldMapper implements ArrayValueMap
 
         @Override
         public String typeName() {
-            return FloatVectorType.INSTANCE_ONE.getName();
+            return FloatVectorType.INSTANCE.getName();
         }
     }
 
@@ -156,7 +156,7 @@ public class FloatVectorFieldMapper extends FieldMapper implements ArrayValueMap
 
     @Override
     protected String contentType() {
-        return FloatVectorType.INSTANCE_ONE.getName();
+        return FloatVectorType.INSTANCE.getName();
     }
 
     @Override

@@ -315,10 +315,8 @@ public final class DataTypes {
             return UNTYPED_OBJECT;
         } else if (value instanceof List list) {
             return valueFromList(list);
-        } else if (value instanceof Object[]) {
+        } else if (value.getClass().isArray()) {
             return valueFromList(Arrays.asList((Object[]) value));
-        } else if (value instanceof float[] values) {
-            return new FloatVectorType(values.length);
         }
         DataType<?> dataType = POJO_TYPE_MAPPING.get(value.getClass());
         if (dataType == null) {
@@ -432,7 +430,7 @@ public final class DataTypes {
         entry(BitStringType.INSTANCE_ONE.getName(), BitStringType.INSTANCE_ONE),
         entry(JsonType.INSTANCE.getName(), JsonType.INSTANCE),
         entry("decimal", NUMERIC),
-        entry(FloatVectorType.INSTANCE_ONE.getName(), FloatVectorType.INSTANCE_ONE)
+        entry(FloatVectorType.INSTANCE.getName(), FloatVectorType.INSTANCE)
     );
 
     public static DataType<?> ofName(String typeName) {
@@ -489,7 +487,7 @@ public final class DataTypes {
         entry("object", UNTYPED_OBJECT),
         entry("nested", UNTYPED_OBJECT),
         entry("interval", DataTypes.INTERVAL),
-        entry(FloatVectorType.INSTANCE_ONE.getName(), FloatVectorType.INSTANCE_ONE)
+        entry(FloatVectorType.INSTANCE.getName(), FloatVectorType.INSTANCE)
     );
 
     private static final Map<Integer, String> TYPE_IDS_TO_MAPPINGS = Map.ofEntries(
@@ -510,7 +508,7 @@ public final class DataTypes {
         entry(GEO_POINT.id(), "geo_point"),
         entry(INTERVAL.id(), "interval"),
         entry(BitStringType.ID, "bit"),
-        entry(FloatVectorType.ID, FloatVectorType.INSTANCE_ONE.getName())
+        entry(FloatVectorType.ID, FloatVectorType.INSTANCE.getName())
     );
 
     @Nullable

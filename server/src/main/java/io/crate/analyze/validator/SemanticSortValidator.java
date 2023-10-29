@@ -51,7 +51,7 @@ public class SemanticSortValidator {
             DataTypes.REGCLASS,
             DataTypes.REGPROC,
             BitStringType.INSTANCE_ONE,
-            FloatVectorType.INSTANCE_ONE
+            FloatVectorType.INSTANCE
         )
     ).map(x -> x.id()).collect(Collectors.toSet());
 

@@ -21,7 +21,6 @@
 
 package io.crate.types;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.IsNot.not;
@@ -241,11 +240,5 @@ public class DataTypesTest extends ESTestCase {
         } else {
             assertThat(dt.compare(dt.sanitizeValue(val1), dt.sanitizeValue(val2)), is(expected));
         }
-    }
-
-
-    @Test
-    public void test_can_guess_float_vectors() throws Exception {
-        assertThat(DataTypes.guessType(new float[] { 3.14f })).isEqualTo(FloatVectorType.INSTANCE_ONE);
     }
 }
