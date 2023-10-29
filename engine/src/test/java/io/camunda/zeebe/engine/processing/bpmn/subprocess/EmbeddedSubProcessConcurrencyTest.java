@@ -15,9 +15,10 @@ import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.builder.EmbeddedSubProcessBuilder;
 import io.camunda.zeebe.model.bpmn.builder.EventSubProcessBuilder;
-import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessEventIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -52,21 +53,28 @@ public class EmbeddedSubProcessConcurrencyTest {
         subprocess ->
             subprocess
                 .startEvent()
-                .parallelGateway()
                 .serviceTask("task", b -> b.zeebeJobType("task"))
-                .moveToLastGateway()
-                .serviceTask("task2", b -> b.zeebeJobType("task2"))
                 .endEvent()
                 .moveToActivity("subProcess")
                 .boundaryEvent(
-                    "errorBoundary",
-                    boundary -> boundary.cancelActivity(true).error("boundaryError"))
+                    "msgBoundary",
+                    boundary ->
+                        boundary
+                            .cancelActivity(true)
+                            .message(
+                                msg ->
+                                    msg.name("boundary")
+                                        .zeebeCorrelationKeyExpression("correlationKey")))
                 .endEvent()
                 .done();
 
     final Consumer<EventSubProcessBuilder> eventSubProcessBuilder =
         eventSubProcess ->
-            eventSubProcess.startEvent("eventSubProcessStartEvent").error("espError").endEvent();
+            eventSubProcess
+                .startEvent("eventSubProcessStartEvent")
+                .message(
+                    m -> m.name("eventSubProcess").zeebeCorrelationKeyExpression("correlationKey"))
+                .endEvent();
 
     ENGINE
         .deployment()
@@ -81,33 +89,47 @@ public class EmbeddedSubProcessConcurrencyTest {
                 .done())
         .deploy();
 
-    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable("correlationKey", "correlationKey")
+            .create();
 
-    final var jobs =
-        RecordingExporter.jobRecords(JobIntent.CREATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .limit(2)
-            .toList();
-    final var firstJob = jobs.get(0);
-    final var secondJob = jobs.get(1);
+    assertThat(
+            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(2))
+        .describedAs(
+            "The 2 message subscriptions must be created before we publish the "
+                + "messages. As the messages have a TTL of 0 seconds")
+        .describedAs("")
+        .hasSize(2);
 
     // when
-    // We need to make sure no records are written in between throw error commands. This could
+    // We need to make sure no records are written in between the publish commands. This could
     // cause the test to become flaky.
-    final var boundaryJobRecord = new JobRecord();
-    boundaryJobRecord.wrapWithoutVariables((JobRecord) firstJob.getValue());
-    boundaryJobRecord.setErrorCode(BufferUtil.wrapString("boundaryError"));
-    final var espJobRecord = new JobRecord();
-    espJobRecord.wrapWithoutVariables((JobRecord) secondJob.getValue());
-    espJobRecord.setErrorCode(BufferUtil.wrapString("espError"));
     ENGINE.writeRecords(
-        // First we trigger the boundary event
+        // First we publish a message to try and trigger the boundary event
         RecordToWrite.command()
-            .key(firstJob.getKey())
-            .job(JobIntent.THROW_ERROR, boundaryJobRecord),
-        // Next we trigger the event sub process. This will interrupt the flow scope of the sub
-        // process, whilst the subprocess is being terminated because of the boundary event
-        RecordToWrite.command().key(secondJob.getKey()).job(JobIntent.THROW_ERROR, espJobRecord));
+            .message(
+                MessageIntent.PUBLISH,
+                new MessageRecord()
+                    .setName("boundary")
+                    .setTimeToLive(0L)
+                    .setCorrelationKey("correlationKey")
+                    .setVariables(BufferUtil.wrapString(""))),
+        // Next we publish a message to trigger the event sub process. This will interrupt the
+        // flow scope of the sub process, whilst the subprocess is being terminated because of the
+        // boundary event
+        RecordToWrite.command()
+            .message(
+                MessageIntent.PUBLISH,
+                new MessageRecord()
+                    .setName("eventSubProcess")
+                    .setTimeToLive(0L)
+                    .setCorrelationKey("correlationKey")
+                    .setVariables(BufferUtil.wrapString(""))));
 
     // then
     assertThat(
@@ -116,7 +138,7 @@ public class EmbeddedSubProcessConcurrencyTest {
                 .filter(r -> r.getValueType() == ValueType.PROCESS_EVENT)
                 .withIntent(ProcessEventIntent.TRIGGERING))
         .extracting(r -> ((ProcessEventRecordValue) r.getValue()).getTargetElementId())
-        .containsExactly("errorBoundary", "eventSubProcessStartEvent");
+        .containsExactly("msgBoundary", "eventSubProcessStartEvent");
 
     // No event should be TRIGGERED. We don't want to trigger the boundary event.
     // The event sub process does not write a TRIGGERED event.
