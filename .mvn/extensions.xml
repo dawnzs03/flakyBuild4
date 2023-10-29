@@ -1,13 +1,12 @@
-<extensions xmlns="http://maven.apache.org/EXTENSIONS/1.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/EXTENSIONS/1.0.0 http://maven.apache.org/xsd/core-extensions-1.0.0.xsd">
-<!--  cache doesn't like incremental so disable it for now... -->
-<!--  <extension>-->
-<!--    <groupId>org.apache.maven.extensions</groupId>-->
-<!--    <artifactId>maven-build-cache-extension</artifactId>-->
-<!--    <version>1.0.1</version>-->
-<!--  </extension>  -->
+<extensions xmlns="http://maven.apache.org/EXTENSIONS/1.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/EXTENSIONS/1.0.0 http://maven.apache.org/xsd/core-extensions-1.0.0.xsd">
+  <!--
+       Maven Incremental Module Builder https://github.com/khmarbaise/incremental-module-builder
+       Usage: mvn -b incremental install
+  -->
   <extension>
-    <groupId>io.jenkins.tools.incrementals</groupId>
-    <artifactId>git-changelist-maven-extension</artifactId>
-    <version>1.6</version>
+    <groupId>com.soebes.maven.extensions</groupId>
+    <artifactId>incremental-module-builder</artifactId>
+    <version>0.2.0</version>
   </extension>
 </extensions>
