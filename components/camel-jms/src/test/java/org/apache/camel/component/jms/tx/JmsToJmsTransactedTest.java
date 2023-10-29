@@ -19,7 +19,6 @@ package org.apache.camel.component.jms.tx;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.jms.AbstractSpringJMSTestSupport;
 import org.apache.camel.component.mock.MockEndpoint;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
@@ -28,12 +27,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @TestInstance(TestInstance.Lifecycle.PER_METHOD)
 public class JmsToJmsTransactedTest extends AbstractSpringJMSTestSupport {
-
-    @BeforeEach
-    public void beforeEach() {
-        service.shutdown();
-        service.initialize();
-    }
 
     @Override
     protected ClassPathXmlApplicationContext createApplicationContext() {
